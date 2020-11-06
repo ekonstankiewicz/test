@@ -1,0 +1,66 @@
+using System.ServiceModel;
+
+/// Generates SHA1 session key string
+/// </summary>
+/// <param name="password">SHA1 hashed password
+/// <returns>SHA1 hash string</returns>
+public static string GenerateKey(string hashedPassword)
+{
+  System.Security.Cryptography.HashAlgorithm hash = System.Security.Cryptography.SHA1.Create();
+  string date = System.String.Format("{0:yyyyMMdd}", System.DateTime.Now);
+  string strToHash = date + hashedPassword;
+  byte[] keyBytes, hashBytes;
+  keyBytes = System.Text.Encoding.UTF8.GetBytes(strToHash);
+  hashBytes = hash.ComputeHash(keyBytes);
+  string hashedString = string.Empty;
+  foreach (byte b in hashBytes)
+  {
+    hashedString += String.Format("{0:x2}", b);
+  }
+
+  return hashedString;
+}
+
+/// <summary>
+/// Hashes specified password with SHA1 algorithm
+/// </summary>
+/// <param name="password">User password
+/// <returns>SHA1 hash  string</returns>
+/// </summary>
+public static string HashPassword(string password)
+{
+  System.Security.Cryptography.HashAlgorithm hash = System.Security.Cryptography.SHA1.Create();
+  byte[] keyBytes, hashBytes;
+  keyBytes = System.Text.Encoding.UTF8.GetBytes(password);
+  hashBytes = hash.ComputeHash(keyBytes);
+  string hashedString = string.Empty;
+  foreach (byte b in hashBytes)
+  {
+    hashedString += String.Format("{0:x2}", b);
+  }
+
+  return hashedString; 
+}
+
+var binding = new BasicHttpBinding();
+var address = new EndpointAddress("https://instalator.iai-shop.com/api/?gate=bundles/addProductsToBundle/120/soap");
+var client = new bundlesPortTypeClient(binding, address);
+
+var request = new addProductsToBundleRequestType();
+request.authenticate = new authenticateType();
+request.authenticate.system_key = GenerateKey(HashPassword("YOUR_KEY"));
+request.authenticate.system_login = "system_login";
+request.@params = new bundleRequestType[1];
+request.@params[0] = new bundleRequestType();
+request.@params[0].products = new productsRequestType[1];
+request.@params[0].products[0] = new productsRequestType();
+request.@params[0].products[0].productId = 1;
+request.@params[0].products[0].productSizes = new sizeRequestType[1];
+request.@params[0].products[0].productSizes[0] = new sizeRequestType();
+request.@params[0].products[0].productSizes[0].size = "size";
+request.@params[0].products[0].addType.addType = addType.selectedSizes;
+request.@params[0].products[0].addType.addTypeSpecified = true;
+request.@params[0].products[0].quantity = 2;
+request.@params[0].bundleId = 3;
+
+addProductsToBundleResponseType response = client.addProductsToBundle(request);
